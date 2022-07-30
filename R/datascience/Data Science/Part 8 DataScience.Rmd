@@ -1,0 +1,101 @@
+---
+title: "Dates and Time"
+output: html_notebook
+---
+# 
+```{r}
+library(lubridate)
+```
+
+#
+```{r}
+ymd_hms(c("20110604110101","2011-06-04 11:01:01",
+"2011/06/04/11/01/01","2011 june 4th, 11:01:01",
+"2011%06%04%11%01%01","04/06/2011 11:01:01",
+"2011-06-04 11:01:01 EAT",
+"2011-06-04 11:01:00+1400"))
+
+mydate<-Sys.time()
+(mydate)
+Sys.time()
+wday(mydate,label = TRUE,abbr = TRUE)
+ceiling_date(ymd("20171009"), "month")
+```
+
+```{r}
+date_m<-format(ymd_hms(Sys.time()),"%d/%m/%y %H:%M:%S")
+date_m
+#To perform arithmetic you must convert them (ymd_hms())
+date_m<-ymd_hms(date_m)
+date_m + years(1)
+date_m +months(7) +days(8)
+date_m
+
+#feb 
+feb<-ymd("2016-02-28")#leap year
+feb
+feb+years(1)
+feb+dyears(1)
+
+#Includes the day's name,different formats and time zone's
+format(Sys.time(),"%c")
+format(Sys.time(),"%D")
+format(Sys.time(),"%F")
+format(Sys.time(),"%z")#t_z
+format(Sys.time(),"%Z")#t_z(label=True)
+```
+• Get the first day of the month for each date.
+```{r}
+month_start<-floor_date(ymd("20171009"), "month")
+wday(month_start)
+day(month_start)
+```
+
+
+• Get the last day of the month for each date.
+```{r}
+ceiling_date(ymd("20171009"), "month") -days(1)
+```
+# Exercise
+```{r}
+#1
+New_month<-ymd(c("2015, April 29th","2017/01/07","17/08/12"))
+floor_date(New_month,"month")-days(1)
+#2
+ymd("20160229")
+feb_leap<-ymd("20160229")
+feb_leap+dyears(1)+days(1)
+
+#3
+ceiling_date(Sys.Date(), "month") + months(0:35)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,212 @@
+---
+title: "Part 5 Data visualization"
+author: "Savins"
+date: "6/14/2022"
+output: html_document
+---
+
+# Data visualization 
+- Variation:within one variable
+#a(continousvariable);Boxplot,histogram 
+#b(categoricalvariable);pie chart,bar chart
+
+- Co variation:Between two variables
+#a)continous vs continous;scatter plots
+#b)continous vs categorical;Box plot,mean bar graph
+#c)categorical vs categorical;Stacked bar graph and clustered bar graph
+
+
+- Categorical variables:classified variables with more than one group
+- Continuous variable:variables that assume numerical values
+
+## Library packages
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+```
+
+# importing and omiting NA's in the data
+```{r}
+combined_data<-read.csv('combined.csv',na.strings="")
+combined_data1
+combined_data1<-read.csv('combined.csv')
+newCombined_data1<-combined_data1 %>% drop_na()
+
+combined_data1 %>% drop_na()
+combined_data %>% drop_na()
+
+glimpse(combined_data)
+View(combined_data)
+colSums(is.na(combined_data))
+view(combined_data)
+newCombined<-combined_data %>% drop_na()
+glimpse(newCombined)
+colSums(is.na(newCombined))
+View(newCombined)
+newCombined
+
+```
+
+# checking and removing outliers
+```{r}
+#checking outliers
+boxplot(newCombined$hindfoot_length)
+#removing outliers
+newCombined[!newCombined %in% boxplot.stats(newCombined$hindfoot_length)$out ]
+
+```
+
+#checking and removing duplicates
+```{r}
+#checking for duplicates
+duplicated(newCombined)
+sum(duplicated(newCombined))
+
+  #removing duplicates
+distinct(newCombined)
+```
+
+#removing empty rows and columns
+```{r}
+combined.data<-read.csv('combined.csv')
+install.packages('janitor')
+library(janitor)
+remove_missing(combined.data)
+clean_names(combined.data)
+clean_names(combined.data,)
+?clean_names()
+```
+
+
+# making plots
+we use the ggplot() under the ggplot2
+```{r}
+#geoms- used for graphical representation of the data can be lines, points, bars
+#geom_point() is used for scatter plot
+#geom_lines() used trend lines for time series
+#geom_bar() used for box plots
+#geom_jitter gives the color
+ggplot(data = newCombined,mapping = aes(x=weight,y=hindfoot_length))+geom_point()
+ggplot(data = newCombined,mapping = aes(x=weight,y=hindfoot_length))+geom_point()+geom_jitter(colour='blue')
+
+```
+
+#hexbin
+for a data set with large data observations eg combined dataset, over plotting of points can be a limitation of the scatter plot one strategy of handling such a setting is to use hexagonal binning of observations. The plot space is tessellated into hexagons. Each hexagon is assigned a color based on the number of observations that fall within its boundaries
+```{r}
+library(hexbin)
+str(newCombined)
+newCombined<-newCombined %>%  mutate(species=as.character(species))
+ggplot(data = newCombined,mapping = aes(x=weight,y=hindfoot_length))+geom_boxplot()
+plot(newCombined$weight,newCombined$hindfoot_length)
+```
+
+# alpha adds some transparency to your plot
+```{r}
+ggplot(data = newCombined,mapping = aes(x=weight,y=hindfoot_length))+
+ geom_point(alpha=0.5,aes(colour=sex))
+```
+
+# Assignment
+```{r}
+View(newCombined)
+str(newCombined)
+fix(newCombined.m)
+newCombined$sex.f<-as.factor(newCombined$sex)
+n_distinct(newCombined$sex)
+```
+# alternative way of replacing data in your data set
+```{r}
+newCombined$sex<-car::recode(newCombined$sex,"'male'='Male';'Male'='Male';'M'='Male';'Female'='Female';'female'='Female';'F'='Female';'MALE'='Male';'FEMALE'='Female'")
+```
+
+# making a box plot
+```{r}
+newCombined$sex.f<-as.factor(newCombined$sex)
+#making a box plot
+ggplot(data = newCombined,mapping = aes(species_id,weight))+geom_boxplot()+theme_bw()
+
+```
+
+
+# Replacing values 
+```{r}
+newCombined.m %>% mutate(gender=ifelse(sex%in%c("MALE","M","m","male"),"Male","Female"))
+```
+
+
+# Plotting time series
+Time series data is a set of observations on the values that a variable takes at different times
+Cross-sectional data-This is the data of one or more variable collected at the same point in time
+Lets calculate the no.of counts per year for each genres.First we need to group the data and count records within each group
+```{r}
+Yearly_count<-newCombined %>% count(year,genus)
+
+Yearly_count
+```
+
+```{r}
+Yearly_count1<-newCombined %>% group_by(year,genus) %>% summarise(n=n()) 
+Yearly_count1
+```
+
+```{r}
+ggplot(Yearly_count1,aes(year,n,color=genus))+geom_line()+facet_wrap(facets = vars(genus))
+
+```
+# assignment
+```{r}
+Yearly_count2<-newCombined %>% group_by(year,genus,sex) %>% summarise(n=n()) %>% filter(genus%in%c("Chaetodipus","Dipodomys","Reithrodontomys","Peromyscus"))
+Yearly_count2
+```
+
+```{r}
+ggplot(Yearly_count2,aes(year,n,color=genus))+geom_line()+facet_wrap(facets = vars(genus))+geom_point()
+
+```
+
+```{r}
+ggplot(Yearly_count2,aes(year,n,color=sex))+geom_line()+facet_wrap(facets = vars(genus))+theme_bw()+labs(x='Year\n',y='Count\n',title="Sex Aginst Genus\n") +
+    theme(axis.text.x = element_text(angle = 90),axis.title= element_text(size = 22))
+```
+
+# Converts blanks into NA
+```{r}
+combined_data[combined_data1=='']#How to check for blanks
+combined_data1[combined_data1=='']<-NA
+combined_data1 %>% na_if('')
+combined_data1 %>% mutate_all(na_if,'')
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

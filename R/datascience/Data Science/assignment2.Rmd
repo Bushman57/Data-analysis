@@ -1,0 +1,160 @@
+---
+title: "Assignment 2"
+output: html_notebook
+---
+```{r,include=FALSE}
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+```
+
+
+1.Import the excel file/data into R. Save it as UWOMAN.
+```{r}
+UWOMAN <- read_excel("C:/Data science/Project D.S/assignment/Assignment3data.xlsx", sheet = "data")
+View(UWOMAN)
+str(UWOMAN)
+UWOMAN$relig<-as.factor(UWOMAN$relig)
+levels(UWOMAN$relig)
+```
+
+2.Define and assign value labels for the different qualitative variables. 
+```{r}
+upd_uwoman<-UWOMAN %>% mutate(region=factor(region,levels = 1:4,labels = c("North","East","West","Central")),resd=factor(resd,levels = 1:2,labels = c("Rural","Urban")),educl=factor(educl,levels=1:3,labels=c("None","Primary","Tertiary")), relig.f=factor(relig,levels = c("Anglican","Muslim","Other","RC"  ),labels = 1:4),assoc=factor(assoc,levels = 0:1,labels = c("doesn't belong","Belong")))
+
+```
+
+#Data cleaning
+```{r}
+sum(duplicated(upd_uwoman))
+upd_uwoman[upd_uwoman=='']
+upd_uwoman<-upd_uwoman %>% modify(outlier)
+colSums(is.na(upd_uwoman))
+median(UWOMAN$cowives)
+upd_uwoman<-upd_uwoman %>% mutate_if(is.numeric,~replace_na(.,median(.,na.rm=T)))
+```
+
+3.Compute the average, minimum and maximum number of Children ever born 
+```{r}
+str(upd_uwoman)
+summary(upd_uwoman$ceb)
+```
+
+4.Which percentage of the respondents are Muslims and which percentage are Catholics.
+```{r}
+upd_uwoman %>% group_by(relig) %>% summarise(n=n()) %>% mutate(perc=n/sum(n),perc=scales::percent(perc)) %>% filter(relig%in%c("Muslim","RC")) %>% select(-n)
+```
+5.Generate a new variable fertility status whereby if number of children born is less than 4, they are infertile, 4 to 8, fertile and above 8 children they are very fertile. What percentage of the respondents are fertile?
+```{r}
+woman<-upd_uwoman %>% mutate(fertility_status=car::recode(ceb,'0:3="infertile";4:8="fertile";else="veryfertile"'))
+woman %>% count(fertility_status) %>% mutate(perc=n/sum(n),perc=scales::percent(perc)) %>% filter(fertility_status=="fertile")
+```
+
+6.Compare the age at first marriage across various religious affiliations.
+```{r}
+m<-woman %>% group_by(agefm,relig) %>% summarise(no.women=n(),.groups = "drop")
+woman %>% group_by(agefm,relig) %>% summarise(no.women=n(),.groups = "drop")
+ggplot(m,aes(no.women,agefm,colour=relig))+geom_line()+facet_wrap(facets = vars(relig))+theme_bw()
+```
+
+7.Is there any association between religion and education level?
+```{r}
+#chi_square
+chisq.test(woman$educl, woman$relig)
+
+#We fail to reject the null hypothesis since pvalue >0.05, there is no association between education level and religion since the p-value is greater than the level of significance hence not statistically significant
+
+library(crosstable)
+crosstable(woman,c(educl,region),by=relig) %>% as_flextable()
+
+#crosstable(woman,c(educl,relig),by=educl )
+?crosstab
+
+```
+
+8.Which percentage of the Muslims belong to an association?
+```{r}
+woman %>% count(relig,assoc) %>% filter(relig%in%"Muslim")
+```
+
+9.With the help of a pie-chart, which percentage have primary and which percentage have tertiary education level?
+```{r}
+chart<- woman %>% count(educl) %>% mutate(perc=n/sum(n),education_level=educl)
+ggplot(chart,aes(x="",y=perc,fill=education_level))+
+  geom_bar(stat = "identity",width = 1)+  coord_polar("y",start=1)+
+  theme_void()+
+  geom_text(aes(label = scales::percent(perc)),position = position_stack(vjust = 0.5))
+
+```
+10.	Test whether there exists significant difference in age at first marriage between those that belong to an association and those that don’t.
+
+#hypothesis
+h0:Their does not exist a difference between the means in the assoc, mean difference=0
+h1:Their exist a difference between the means in the assoc
+
+```{r}
+shapiro.test(woman$agefm)
+plot(agefm~assoc,data=woman)
+MW<-t.test(agefm~assoc,data=woman)
+MW$p.value
+0.1955273
+
+#we fail to reject the null hypothesis since the pvalue is greater than the level of significance hence not statistically significant to support that their is  mean difference between the gr
+```
+
+11.Test whether there is a significant relationship between number of children born and age
+
+#Hypothesis
+H0:Their exist a significant rlship between age and children born
+H1:Their does not exist a significant rlship between age and children born
+```{r}
+plot(ceb~age,data=woman)
+model_wom<-lm(ceb~age,data=woman)
+summary(model_wom)
+#We fail to reject the null hypothesis since the p-value is less than the levels of significance hence statistically significant 
+```
+
+12.Is there a significant mean difference in number of children born by religious affiliation? Which group produces more children than the others and which groups are significantly different from each other.
+
+#hypothesis
+h0:Their does not exist a difference between the means in the religion affliation, mean difference=0
+h1:Their exist a difference between the means in the religion affliation
+```{r}
+boxplot(ceb~relig,data=woman)
+# we get a vitualization view of the difference in means
+model_p<-lm(ceb~relig,data = woman)
+summary(model_p)
+#We reject the null hypothesis since p-value > level of significance hence not statistically significant to approve difference in the means is 0
+
+woman %>% group_by(relig) %>% summarise(sum_ceb=sum(ceb))
+#the Anglicans 
+```
+
+13.Does the choice to belong to an association depend on age and education level? 
+```{r}
+#as.numeric(woman$assoc)
+model_k<-glm(assoc~age+educl,woman,family = "binomial")
+summary(model_k)
+
+```
+
+14.	Does number of co-wives depend on religious affiliation?
+H0:The difference in mean is 0
+H1:the mean difference is not equal to 0
+```{r}
+model_b<-lm(cowives~relig,data = woman)
+summary(model_b)
+#we reject the null hypothesis since the pvalue is greater than the level of significance hence not statistically significant to support that the mean difference is 0
+```
+15.	Regress children ever born on age and interpret your results.
+H0:The difference in mean is 0
+H1:the mean difference is not equal to 0
+```{r}
+ggplot(woman,aes(age,ceb))+geom_point()
+Mod_b<-lm(ceb~age,data = woman)
+summary(Mod_b)
+#We fail to reject the null hypothesis since the p-value is less than the levels of significance hence statistically significant 
+#Multiple R-squared indicates that the independent variable(age) can account 61% of the  dependent variable(children ever born)
+```
+

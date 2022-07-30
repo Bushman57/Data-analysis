@@ -1,0 +1,88 @@
+---
+title: "Part 2.Regression"
+output: html_notebook
+---
+```{r}
+install.packages("rcompanion")
+library(rcompanion)
+```
+
+#converting non-linear data to linear working with their lamda's
+```{r}
+#we use the rcompanion package
+transformTukey(auto_df$weight,plotit = FALSE,returnLambda = TRUE)
+transformTukey(auto_df$mpg,plotit = FALSE,returnLambda = TRUE)
+transformTukey(auto_df$year,plotit = FALSE,returnLambda = TRUE)
+?transformTukey
+auto_df$year2=auto_df$year^0.475
+auto_df$mpg2=auto_df$mpg^0.175
+auto_df$weight2=-1*auto_df$weight^-0.475
+
+attach(auto_df)
+auto_df
+
+```
+
+#splitting
+```{r message=FALSE, warning=FALSE}
+require(caTools)
+sample = sample.split(auto_df,SplitRatio = 0.80) 
+train1 =subset(auto_df,sample ==TRUE) # creates a training dataset named train1 with rows which are marked as TRUE
+test1=subset(auto_df, sample==FALSE)
+nrow(train1)
+nrow(test1)
+nrow(auto_df)
+```
+#final model
+```{r}
+fit5 <- lm(mpg2~weight2+year,data = train1)
+fit6 <- lm(mpg~weight+year,data = train1)
+summary(fit5)
+#summary(fit6)
+plot(fit5,which = 1)
+#plot(fit6,which = 1)
+
+```
+
+## Accuracy
+
+We will use the test data to check the accuracy of our final model.By considering the following ;
+#1.R
+```{r message=FALSE, warning=FALSE}
+predictions<-predict(fit5, test1)
+summary(fit5)
+mse <- mean((test1$mpg - predictions)^2)
+print(mse)
+```
+
+
+#.Error rate of the model
+```{r message=FALSE, warning=FALSE}
+(sigma(fit5)/mean(test1$mpg))*100
+
+```
+
+
+```{r message=FALSE, warning=FALSE}
+test1$predicted<- predict(fit5,test1)
+actuals_preds <- data.frame(test1$mpg,test1$predicted)
+names(actuals_preds)<- c("mpg","predicted")
+correlation_accuracy <- cor(actuals_preds)
+correlation_accuracy
+```
+The correlation of the models shows that the accuracy is around 92 %.Lets check the true mpg and predicted mpg for the test data.
+
+```{r}
+head(actuals_preds)
+
+```
+Wow! what happened?We used log to the response value in our model which predicted the response with a log. If we use  log to the original mpg we can relate this result.
+
+```{r message=FALSE, warning=FALSE}
+actuals_preds$log_mpg <- log(actuals_preds$mpg)
+head(actuals_preds)
+test_dummy<-actuals_preds %>% select(-mpg)
+cor(test_dummy)
+ cor(actuals_preds$predicted,actuals_preds$log_mpg)
+```
+

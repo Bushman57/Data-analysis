@@ -1,0 +1,240 @@
+---
+title: "Regression analysis"
+author: "Savins"
+date: "7/5/2022"
+output: html_document
+---
+```{r include=FALSE}
+library(tidyverse)
+library(stringr)
+library(datarium)
+```
+
+```{r}
+
+fix(cars)
+view(cars)
+str(cars)
+ 
+```
+
+Regression analysis-is the study of the rlship btwn two or more variables and is usually conducted for the following reasons;
+1)when we want to know wither any relationship btwn two or more variables exist
+2)when we are interested in understanding the nature of the relationship btwn two or more variables
+3)when we want to predict a variable given the value of others
+
+#assumptions made in regression analysis
+a)linearity-There exists a linear relationship between the independent variable x and the dependent variable y.
+b)Outliers-Outliers affect the regression analysis
+Normality-The residuals variables of the model are normally distributed.
+c)Independence-The residuals variables are independent. In particular, there is no correlation between consecutive residuals variables in time series data.
+d)Multicollinearity-a statistical concept where several independent variables in a model are correlated.
+e)Homoscedasticity-The residuals variables  have constant variance at every level of x(using a scatter plot-the output graph shape should look cigar_shaped ).The converse become an Heteroscedasticity(cone_shaped)
+
+#In this exercise we will build a simple linear regression to predict distance by establishing a statically significant rlship with speed
+```{r}
+#1.linearity
+#We add a line to our graph -geom_smooth()
+cars
+ggplot(data = cars,aes(speed,dist))+geom_point()+geom_smooth(method=lm,se=FALSE)
+
+
+#2.Outliers
+#Box plot
+par(mfrow=c(1,2)) #divides the graph area into two columns
+view(cars)
+#identifying outliers
+valuem<-boxplot.stats(cars$dist)$out[boxplot.stats(cars$dist)$out>=1]
+boxplot.stats(cars$dist)$out
+par(mfrow=c(1,2))
+boxplot(cars$dist,sub=paste("Outliers:",boxplot.stats(cars$dist)$out, collapse = ", "))
+boxplot(cars$speed,sub=paste("Outliers:",boxplot.stats(cars$speed)$out,collapse = ", "))
+cars$speed[boxplot.stats(cars$speed)$out]
+#Removing outliers
+#Changing the values of outliers to NA
+for(x in c("dist","speed")){
+  value=cars[,x][cars[,x]%in%boxplot.stats(cars[,x])$out]
+  cars[,x] [cars[,x]%in%value]=NA
+}
+#modify
+cars_2<-cars %>% modify(  outlier)
+outlier<- function(x, na.rm=TRUE){
+  if(is.numeric(x)==T){
+  q1=quantile(x,.25)
+  q3=quantile(x,.75)
+  IQR_x<-IQR(x)
+  #converts to NA
+x<-ifelse(x<q1 - 1.5*IQR_x|x>q3 + 1.5*IQR_x,NA,x)
+  }else
+    x
+  return(x)
+}
+m<-RDATASET %>% modify(outlier)
+  colSums(is.na(m))
+  m1<-m %>% modify_if(is.numeric,~replace_na(.,mean(.,na.rm=T)))
+ m1 %>% modify(outlier)
+fix(mydataset)
+cars_2
+median(cars$dist)
+```
+
+
+```{r}
+#3.Na's
+
+cars$dist <- ifelse(is.na(cars$dist),mean(cars$dist,na.rm = TRUE),cars$dist)%>% trunc(cars)
+
+cars_3<-purrr::modify_if(cars_2,~is.numeric(.),~round(.,0))
+rm(list = ls())
+cars
+
+#Convert Na's to mean
+cars_3<-cars_2 %>% mutate_at(vars(dist,speed),~ifelse(is.na(.),mean(.x,na.rm=TRUE),.x)) %>% trunc(.)
+?modify()
+colSums(is.na(cars_2))
+
+#4.Normality
+#test for normality
+#h0:mean=0
+#h1:mean!=0
+shapiro.test(cars_2$speed)
+#since p-value is >than level of significance
+plot(density(cars_2$speed))+
+polygon(density(cars_2$speed),col = "blue")
+plot(density(cars_2$dist))+
+polygon(density(cars_2$dist),col = "blue")
+```
+
+if p-value is less than 0.05 we reject the null hypothesis-independent variable is statistically significant
+```{r}
+#Checking for collinearity
+cor(cars_3$speed,cars_3$dist)
+cars
+#simple linear regression
+model1<-lm(data = cars_3,speed~dist)
+new_dist<-data.frame(dist=c(21,38,32,80))
+predict(model1,new_dist)
+view(cars)
+max(cars$speed)
+min(cars$speed)
+
+```
+```{r}
+#multiple linear regression
+marketing
+
+#Build a regression model for estimating the sales based on the advertising budget invested in YouTube , facebook and newspaper
+
+#1.linearity
+ggplot(mapping = aes(youtube,sales),data = marketing)+geom_point()+geom_smooth(method = lm,se=FALSE)
+ggplot(mapping = aes(newspaper,sales),data = marketing)+geom_point()+geom_smooth(method = lm,se=FALSE)
+ggplot(mapping = aes(sales,youtube),data = marketing)+geom_point()+geom_smooth(method = lm,se=FALSE)
+
+#2.outliers
+new<-marketing %>% modify(outlier)
+colSums(is.na(new))
+marketing_new<-new %>% modify_if(is.numeric,~replace_na(.,mean(.,na.rm=T)))
+                                 
+#Normality
+#test for normality
+#h0:mean=0
+#h1:mean!=0
+
+shapiro.test(marketing_new$youtube)
+shapiro.test(marketing_new$newspaper)
+shapiro.test(marketing_new$facebook)
+#since p-value is less than the level of significance we fail to reject h0
+
+model_marketing<-lm(sales~youtube+newspaper+facebook,data = marketing_new)
+summary(model_marketing)
+#Multiple R-squared:  0.8972,	Adjusted R-squared:  0.8956 
+model_marketing1<-lm(sales~youtube+facebook,data = marketing_new)
+summary(model_marketing1)
+#Multiple R-squared:  0.8972,	Adjusted R-squared:  0.8962 
+cor(marketing_new$newspaper,marketing_new$sales)#we use the datarium package to access the cor ()
+```
+
+*To compute multiple regression using all of the predictors in the data set, simply type this:
+*a
+```{r}
+model<-lm(sales~.,data=marketing)
+summary(model)
+model<-lm(sales~.-newspaper,data=marketing)
+summary(model)
+
+```
+
+
+
+#youtube on multiple regression
+```{r}
+view(data_in)
+data_in<-diamonds[1:506,]
+m<-data_in %>% modify(outlier) 
+colSums(is.na(m))
+m<-m %>% modify_if(is.numeric,~replace_na(.,mean(.,na.rm=T)))
+m
+sum(duplicated(m))
+distinct(m)
+summary(m)
+
+
+
+plot(m$price,m$depth)
+
+ 
+#function to generate random value with the nrow in the dataset
+ random_n(m)
+
+ #
+ random_n <-function(x){
+  p1=order(runif(nrow(x)))s
+   p2=max(p1)
+   return(list(n=p2,values=p1))
+ }
+ 
+  #data partition
+ p1=runif(nrow(m))#506
+ p2=order(p1)
+ max(p2)
+ training_ds=m[p2[1:350],]
+ test_ds=m[p2[351:506],]
+ 
+ #model building
+ model_m<-lm(price~x+z,data=training_ds)
+ plot(model_m)
+ summary(model_m)
+ pred_value<-predict(model_m,test_ds)
+ pred_value
+ test_ds$price_pred<-pred_value
+ view(test_ds %>% select(price,price_pred))
+```
+
+
+#2.Binary logistic regression model
+packages required
+```{r}
+library(manipulate)
+library(DescTools)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

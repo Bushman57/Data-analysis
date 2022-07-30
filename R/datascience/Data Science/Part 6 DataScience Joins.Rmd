@@ -1,0 +1,119 @@
+---
+title: "Part 6"
+author: "Savins"
+date: "6/23/2022"
+output: html_document
+---
+# Combining datasets
+
+#Packages
+```{r}
+library(tidyverse)
+```
+
+#Building joins
+```{r echo=TRUE}
+irisLk <- data.frame(
+Species=c("setosa","virginica",toupper("VERSICOLOR")),
+colour=c("Red","Blue","Green"))
+view(irisLk)
+#full_join
+m<-iris %>%
+full_join(irisLk, c("Species"="Species"))
+m
+#Left_join
+NewIris<-iris %>% left_join(irisLk)
+str(irisLk)
+str(NewIris)
+view(NewIris)
+#Inner_join
+iris2<-iris %>%inner_join(irisLk, c("Species"="Species"))
+str(iris2)
+view(iris2)
+iris2
+#cross_join
+iris4<-iris %>%mutate(dummycol=1,Species)%>%full_join({irisLk %>% mutate(dummycol=1)}, by="dummycol") %>% mutate(Species.x=Species.y)
+
+view(iris4)
+iris4
+iris_new<-irisLk %>% mutate( Species=rep(Species,50))
+```
+
+# Notes on join
+```{r}
+X<-data.frame(A=c("av","bs","c"),
+              B=c("t","u","v"),
+              C=c(1,2,3)
+              )
+Y<-data.frame(A=c("bs","av","c"),
+              K=c("t","u","v"),
+              D=c(1,2,3)
+              )
+
+
+X
+Y
+X %>% left_join(Y,c("C"="D"))
+X %>% left_join(Y)
+X %>% inner_join(Y)
+X %>% full_join(Y)
+iris %>% full_join(irisLk)
+iris %>% mutate(dummycol=1) %>% full_join(irisLk %>% mutate(dummycol=1),by="dummycol")
+X %>% mutate(dummycol=1) %>% full_join(Y %>% mutate(dummycol=1),by="dummycol") %>% select(-dummycol)
+m %>% full_join(irisLk,by="colour")
+```
+
+
+```{r}
+Y<-data.frame(A=c(2,3,5),
+              B=c(1,2,3),
+              D=c(3,2,1)
+              )
+X<-data.frame(A=c(2,3,7),
+              B=c(1,2,3),
+              D=c(3,2,1),
+              E=c(4,5,2)
+              )
+
+X %>% full_join(Y)
+
+#cross_join
+iris4<-iris %>%mutate(dummycol=1)%>%full_join({irisLk %>% mutate(dummycol=1)}, by="dummycol") 
+iris4
+
+
+```
+
+
+
+
+```{r}
+data1<-data.frame(
+  ID=1:10,
+  height=rnorm(10,3,1),
+  weight=rnorm(10,2,1)
+)
+
+data2<-data.frame(
+  ID=c(10:2,NA),
+  IQ=rnorm(10,3,1),
+  Age=rnorm(10,2,1)
+)
+trunc(runif(10)*10)
+data1 %>% full_join(data2)
+data1
+data2
+data1 %>% inner_join(data2)
+```
+
+
+
+
+
+
+
+
+
+
+
+

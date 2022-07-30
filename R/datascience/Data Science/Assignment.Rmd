@@ -1,0 +1,110 @@
+---
+title: "Assignment"
+author: "Savins"
+date: "6/14/2022"
+output: html_document
+---
+## Assignment
+
+#packages
+```{r include=FALSE}
+install.packages("dummy")
+library(dummy)
+library(tidyverse)
+library(car)
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+
+```
+
+
+
+## Assignment
+```{r}
+#1)
+RDATASET<-read.csv('Assignment1data.csv')
+ view(RDATASET)
+str(RDATASET)
+#2)
+RDATASET$Marital.f<-factor(RDATASET$marital,levels = c(1,2,3,4),labels = c(     "single","married","divorced","searching"))
+table(RDATASET$Marital.f)
+RDATASET$degree.f<-factor(RDATASET$degree,levels = c(0,1, 2, 3, 4),labels = c("no-education", "primary", "secondary", "tertiary", "bachelor") )
+RDATASET$sex.f<-factor(RDATASET$sex,levels = c(1,2),labels = c("Female","male"))
+RDATASET$race.f<-factor(RDATASET$race,levels =c(1,2,3),labels =c("white","black","others") )
+RDATASET$relig.f<-factor(RDATASET$relig,levels = c(1,2,3,4),labels= c("Catholics","Muslim","Anglicans","Pentecost") )
+levels(as.factor(RDATASET$relig))
+data_factor<-RDATASET %>% select(Marital.f,degree.f,sex.f,race.f,relig.f)
+data_factor
+#4)                         
+Married<-RDATASET %>% transmute(years_in_marriage=age-agewed)
+Married
+#5)
+Age.months<-RDATASET %>% mutate(Age_months=age*12)
+Age.months
+#6)
+#descriptive-mean, median, mode, skewness, kurtosis, standard deviation, first quartile and third quartile
+Age_month<-Age.months %>% select(Age_months)
+Age.months %>% select(age,Age_months) %>% colMeans()
+list("age"=summary(Age.months$age),"age_months"=summary(Age.months$Age_months))
+#7)
+RDATASET %>% transmute(fertility.status=case_when(
+  childs>=3~"fertile",
+  TRUE~"infertile"))
+#8)
+RDATASET$age_group<-car::recode(RDATASET$age,"0:10='kids';10:19='teenagers';20:35='youths';36:55='adults';else='elderly';NA=NA")
+table(RDATASET$age_group)
+#9)
+summary(RDATASET$partners)
+trunc(summary(RDATASET$partners))
+mean(RDATASET$partners)
+#10)
+table(RDATASET$relig.f,useNA = "always")
+RDATASET %>% count(relig.f) %>% mutate(percentage=(n/sum(n))*100) %>% filter(relig.f%in%c("Catholics","Muslim"))
+
+#11.Compute the average sexual frequency across various religious affiliations.
+RDATASET %>%group_by(relig.f) %>% summarise(avg.sex=mean(sexfreq))
+ ?group_by
+
+#12.Which percentage of the Muslims are whites and what percentage of the blacks are Catholics?   
+RDATASET %>%group_by(relig.f)%>%
+  summarise(white_perc=(sum(race.f=="white")/length(race.f))*100)%>%filter(relig.f=="Catholics")
+
+RDATASET %>%group_by(relig.f) %>% summarise(black_perc=(sum(race.f=="black")/length(race.f))*100)%>%filter(relig.f=="Muslim")
+
+#13.With the help of a pie-chart, which percentage have primary and which percentage have tertiary education level?
+
+perc_edc<-RDATASET %>% count(degree.f,name = "tally") %>% mutate(percentage=(tally/sum(tally))*100)  %>% rename(level_edc=degree.f)
+perc_edc<-perc_edc %>% arrange(percentage)
+perc_edc
+
+ggplot(perc_edc,aes(x="",y=percentage,fill=level_edc)) +
+  geom_bar(stat="identity",width=1) +
+  coord_polar("y",start = 1)+
+  theme_void()+
+  theme(legend.position="none") +
+  #geom_text(aes(y =percentage, label = level_edc),stat="identity", color = "black",label.r=3, label.border=5,size=6,) +
+ # scale_fill_brewer(palette="Set1")
+
+
+#14.Test whether there is a significant relationship between number of children born (Childs) and sex frequency (sexfreq).
+ #there is no significant rlship between  sexfreq and children born
+ summary(lm(RDATASET$childs~1+RDATASET$sexfreq))
+ childs<-RDATASET$childs
+ sexfreq<-RDATASET$sexfreq
+ plot(childs~1+sexfreq,data =RDATASET)+
+ abline(lm(childs~sexfreq,data = RDATASET),col='blue')
+
+  RDATASET$degree_f<-dummy(RDATASET$degree.f)
+ 
+ #15. Is there a significant correlation between age group and education level?
+ summary(lm(RDATASET$degree~RDATASET$age_group)) 
+table(as.factor(RDATASET$age_group))
+
+# 16.	Is there any association between race and marital status?
+model<-lm(RDATASET$race~RDATASET$Marital.status)
+Anova(model)
+summary(model)
+ls()
+getwd()
+```

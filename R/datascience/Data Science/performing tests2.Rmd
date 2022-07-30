@@ -1,0 +1,415 @@
+---
+title: "compairing means"
+output:
+  word_document: default
+  html_notebook: default
+---
+```{r,include=FALSE}
+#library(tidyverse)
+
+library(ggpubr)
+library(PairedData)
+library(tidyverse)
+```
+
+#Parametric test
+
+#One sample t.test
+-we use the one sample t.test when comparing the mean of one variable.
+
+t.test(x, mu = 0, alternative = "two.sided")
+x: a numeric vector containing your data values
+mu: the theoretical mean. Default is 0 but you can change it.
+alternative: the alternative hypothesis. Allowed value is one of “two.sided” (default), “greater” or “less”.
+
+```{r}
+x<-c(rnorm(80,10))
+mean(x)
+t.test(x,mu=10)
+m$p.value
+#assumption;Normality is achieved
+shapiro.test(x)
+hist(x)
+```
+
+
+#Two sample t.test
+-paired sample t.test
+-independent t.test(unpaired)
+
+#1.paired t.test
+The paired samples t-test is used to compare the means between two related groups of samples. In this case, you have two values (i.e., pair of values) for the same samples
+
+t.test(x, y, paired = TRUE, alternative = "two.sided")
+x,y: numeric vectors
+paired: a logical value specifying that we want to compute a paired t-test
+alternative: the alternative hypothesis. Allowed value is one of “two.sided” (default), “greater” or “less”.
+```{r}
+# Weight of the mice before treatment
+before <-c(200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2, 193.7)
+# Weight of the mice after treatment
+after <-c(392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3, 352.2)
+#Create a data frame
+Mice_dat<-data.frame(
+  group = rep(c("before", "after"), each = 10),
+  weight = c(before,  after)
+)
+```
+
+Statistical assumptions & test 
+```{r}
+#compute the mean and the sd
+Mice_dat %>% group_by(group) %>% summarise(count=n(),mean=mean(weight,na.rm = T),sd=sd(weight,na.rm = T))
+ggplot(aes(group,weight,colour=group),data=Mice_dat)+geom_boxplot()
+# Subset weight data before treatment
+before <- subset(Mice_dat,  group == "before", weight,
+                 drop = TRUE)
+# subset weight data after treatment
+after <- subset(Mice_dat,  group == "after", weight,
+                 drop = TRUE)
+
+#pairedData package
+new_mice<-paired(before,after)
+plot(new_mice, type = "profile") + theme_bw()
+
+#assumptions to consider 
+#0.Are the two samples paired?
+#1.Is the distribution large n<30 ??What if is >30
+#2.Normality where to check -difference in the two paired variables
+?with
+diff <- with(Mice_dat, weight[group == "before"] - weight[group == "after"])
+shapiro.test(diff) #=>p-value = 0.6141
+#we fail to reject the null hypothesis since the pvalue is > than the level of significance implying that the distribution of the differences (diff) are not significantly different from normal distribution. In other words, we can assume the normality.
+
+#Question : Is there any significant changes in the weights of mice after treatment?
+mod<-t.test(before,after,paired = T)
+mod$p.value
+#we reject the null hypothesis since the pvalue is < 0.05  and conclude that the average weight of the mice before treatment is significantly different from the average weight after treatment with a p-value = 6.210^{-9}.
+```
+
+#2.Independent/unpaired 
+-The independent-samples t-test, also known as the independent t-test, independent-measures t-test, between-subjects t-test or unpaired t-test, (e.g., employed versus unemployed people, males versus females, low versus high anxiety students, etc.) in terms of the mean of a continuous dependent variable (e.g., salary, running speed, exam score, etc.). More specifically, the independent-samples t-test is used to determine whether the mean difference between these two groups is statistically significant.
+-To compare the means of two groups, you can use either the function t_test()(parametric) or Wilcox_test() (non-parametric).
+str->t.test(x,y)
+x;Categorical
+y;Continuous
+```{r}
+#ggpubr-package
+Prac<-ToothGrowth
+Prac$dose<-as.factor(Prac$dose)
+
+#assumptions to consider
+#1.The categorical data has to have two factors only
+#2.outliers
+#3.Normality in the independent variable
+
+shapiro.test(Prac$len)
+#with a p_value > 0.05 we fail to reject the null hypothesis because their is no statistically significance in difference from  the normal distribution 
+Prac %>% modify(outlier)
+#No outliers
+nlevels(Prac$supp)
+#Two factors
+
+#Test
+#H0:The  mean difference between the group OJ and VC is 0
+#H1: Mean difference btwn the groups is not equal to zero
+
+mod<-t.test(len~supp,data=Prac)
+mod$p.value  # => 0.06063451
+#pvalue is >0.05, We fail to reject the null hypothesis  because their is no statistical significance between the group OJ & VC
+
+```
+
+
+#Anova
+-One way Anova
+-Two way Anova
+
+#1.One way Anova
+- Also known as one-factor ANOVA, is an extension of independent two-samples t-test for comparing means in a situation where there are more than two groups.
+(e.g) we test the effects of 3 types of fertilizer on crop yield.
+
+##Tukey multiple pairwise-comparisons
+As the ANOVA test is significant, we can compute Tukey HSD (Tukey Honest Significant Differences, R function: TukeyHSD()) for performing multiple pairwise-comparison between the means of groups.
+
+```{r}
+#import data
+New_plant<-PlantGrowth
+
+#Compute statistics
+group_by(New_plant, group) %>%
+  summarise(
+    count = n(),
+    mean = mean(weight, na.rm = TRUE),
+    sd = sd(weight, na.rm = TRUE)
+  )
+
+#visualization
+#ggpubr-package:)
+ggboxplot(New_plant,"group","weight",color = "group",xlab = "Treatment")
+#mean plot
+ggline(New_plant, x = "group", y = "weight"
+,add = c("mean_se", "jitter") )# Add error bars: mean_se
+
+#test
+one.way <- aov(weight ~ group, data = New_plant)
+summary(one.way)
+#As the p-value is less than the significance level 0.05, we can conclude that there are significant differences between the groups highlighted with “*" in the model summary.
+
+TukeyHSD(one.way)
+#It can be seen from the output, that only the difference between trt2 and trt1 is significant with an adjusted p-value of 0.012.
+
+#Assumptions
+#1.Homogeneity of variance
+plot(one.way,1)
+levene_test(weight~group,data = New_plant)
+#library(rstatix)
+
+#2.Normality
+plot(one.way,2)
+
+```
+
+
+#2.Two way Anova
+-Is used to evaluate simultaneously the effect of two grouping variables (A and B) on a response variable.
+##Two-way ANOVA test hypotheses
+1)There is no difference in the means of factor A
+2)There is no difference in means of factor B
+3)There is no interaction between factors A and B
+The alternative hypothesis for cases 1 and 2 is: the means are not equal.
+
+The alternative hypothesis for case 3 is: there is an interaction between A and B.
+
+```{r}
+#Assumptions of two-way ANOVA test
+#1.Normality of variance
+#2.Homogeneity of variance
+
+
+```
+
+#Compute two-way ANOVA test in R: balanced designs
+```{r}
+#Importing data
+new_growth<-ToothGrowth
+str(new_growth)
+#Convert dose as a factor 
+new_growth<-new_growth %>% mutate(dose=factor(dose,levels = c(0.5,1,2),labels = c("D0.5", "D1", "D2")))
+
+table(new_growth$supp,new_growth$dose)          ##check if its a balanced design
+```
+
+```{r}
+#Question: We want to know if tooth length depends on supp and dose.
+#visualize
+ggboxplot(new_growth,x="dose",y='len',color="supp")
+
+#Compute two-way ANOVA test
+res.aov<-aov(len~supp+dose,data = new_growth)
+summary(res.aov)
+
+#We reject the null hypothesis since pvalue is less than the level of significance
+
+##conclusion
+#Both supp and dose are statistically significant. dose is the most significant factor variable. These results would lead us to believe that changing delivery methods (supp) or the dose of vitamin C, will impact significantly the mean tooth length.
+```
+
+```{r}
+# Two-way ANOVA with interaction effect
+# These two calls are equivalent
+res.aov3 <- aov(len ~ supp * dose, data = new_growth)
+res.aov3 <- aov(len ~ supp + dose + supp:dose, data = new_growth)
+summary(res.aov3)
+
+
+model.tables(res.aov3, type="means", se = TRUE)
+
+
+```
+Not the above fitted model is called ##additive model##. It makes an assumption that the two factor variables are independent. If you think that these two variables might interact to create an synergistic effect, replace the plus symbol (+) by an asterisk (*), as follow.
+
+
+#multiple pairwise comparison
+- a significant p-value indicates that some of the group means are different, but we don’t know which pairs of groups are different.
+```{r}
+#we use the turkey pairwise comparison to determine mean difference btwn groups
+TukeyHSD(res.aov3, which = "dose")
+
+#Assumptions
+# 1. Homogeneity of variances
+plot(res.aov3, 1)
+#2.Normality
+plot(res.aov3, 2)
+```
+#Compute two-way ANOVA test in R: unbalanced designs
+```{r}
+Unequal_samples<-data.frame(
+  environment=c(rep("offline",5),rep("online",4),rep("offline",8),rep("online",7),rep("offline",3),rep("online",3)),
+  instruction=c(rep("classroom",7),rep("tutor",6),rep("classroom",13),rep("tutor",4)),
+  math=trunc(rnorm(30,75,8))
+)
+```
+
+#weighted means
+```{r}
+#weighted means-consider correlation btwn independent variables brought by the unequal sample size
+anova(aov(math ~ environment * instruction, Unequal_samples))
+anova(aov(math ~ instruction*environment , Unequal_samples))
+
+#Note that in the case of two-way ANOVA, the ordering of our independent variables matters when using weighted means. Therefore, we must run our ANOVA two times, once with each independent variable taking the lead. However, the interaction effect is not affected by the ordering of the independent variables.
+
+#we fail to reject the null hypothesis since we lack significance evidence to support difference in mean
+```
+
+#unweighted means
+```{r}
+#unweighted means-does not consider correlation btwn independent variables brought by the unequal sample size
+library(car)
+mod<-aov(math ~ environment * instruction, Unequal_samples)
+Anova(mod,type="3")
+
+
+
+
+```
+
+
+
+
+
+
+Note: If you have three independent variables rather than two, you need a three-way ANOVA. Alternatively, if you have a continuous covariate, you need a two-way ANCOVA.
+
+#chi-square
+-The chi-square test evaluates whether there is a significant association between the categories of the two variables. 
+-Is a statistical method which used to determine if two categorical variables have a significant correlation between them.
+
+For example:-We can build a data set with observations on people’s cake buying pattern. And, try to correlate the gender of a person with the flavor of the cake they prefer. Although, if a correlation is being found, we can plan for an appropriate stock of flavors by knowing the number of people visiting with respect to gender.
+
+$$test basics$$
+Null hypothesis (H0): the row and the column variables of the contingency table are independent.
+Alternative hypothesis (H1): row and column variables are dependent
+For each cell of the table, we have to calculate the expected value under null hypothesis.
+
+For a given cell, the expected value is calculated as follow:
+$$e=(row.sum∗col.sum)/grand.total$$
+Compute chi-square test 
+```{r}
+#woman data set .RDATA7
+chisq.test(woman$educl, woman$relig)
+```
+
+#Note if the assumptions are not satisfied we use the non-parametrics  to perform our test
+
+
+#Non-parametric test
+#1.Kruskal-Wallis Test(One-way Anova)
+-A collection of data samples are independent if they come from unrelated populations and the samples do not affect each other. Using the Kruskal-Wallis Test, we can decide whether the population distributions are identical without assuming them to follow the normal distribution.
+```{r}
+
+air<-air%>% modify(outlier)
+colSums(is.na(air))
+air<-air %>% mutate_if(is.numeric,~replace_na(.,trunc(mean(.,na.rm=T))))
+view(air)
+view(airquality)
+air<-airquality
+air$Month<-as.factor(air$Month)
+
+levene_test(Ozone~Month,data=air)
+#the levene test does not work -homogeneity is also violated
+shapiro.test(air$Ozone)
+#Normality is violated
+krusk_mod<-kruskal.test(Ozone~Month,data=air)
+
+#with a p-value 1.491e-06 nearly zero we reject the null hypothesis , At .05 significance level, we conclude that the monthly ozone density in New York from May to September 1973 are nonidentical populations.
+```
+
+
+#2.Sign Test
+A sign test is used to decide whether a binomial distribution has the equal chance of success and failure.
+```{r}
+binom.test(5,18)
+```
+
+#3.Wilcoxon Signed-Rank Test(Paired t test)
+-Two data samples are matched if they come from repeated observations of the same subject
+-Using the Rank Test, we can decide whether the corresponding data population distributions are identical without assuming them to follow the normal distribution.
+```{r}
+#the barley yield in years 1931 and 1932 of the same field are recorded. 
+immer
+
+#test
+#H0:The barley yields of the two sample years are identical populations.
+wilcox.test(immer$Y1,immer$Y2,paired = T)
+
+#At .05 significance level, we conclude that the barley yields of 1931 and 1932 from the data set immer are nonidentical populations.
+```
+
+#4.Mann-Whitney-Wilcoxon(independent)
+-Two data samples are independent if they come from distinct populations and the samples do not affect each other.
+-Assuming normal distribution is not considered
+```{r}
+#there are gas mileage data of various 1974 U.S. automobiles.
+mtcars
+
+#test
+#H0:That the gas mileage data of manual and automatic transmissions are identical populations.
+wilcox.test(mpg~am,data = mtcars)
+
+#At .05 significance level, we conclude that the gas mileage data of manual and automatic transmissions in mtcar are nonidentical populations.
+```
+#5.Friedman test(Two-way Anova)
+$$https://www.reneshbedre.com/blog/friedman-test.html$$
+-Friedman test is appropriate when a sample does not meet the assumption of normality or dependent variable is measured on an ordinal scale (e.g. Likert scale).
+```{r}
+#Assumptions
+#1.Dependent variable should be measured on a continuous or ordinal scale
+#2.Treatments are random sample from population
+#3.The observations in blocks should be mutually independent (results from one block should not affect the results from other block)
+#4.There should be three or more treatments
+#5.There is no interactions between the treatment and blocks
+#6.Data do not need to meet the assumption of parametric test (e.g. normality)
+```
+
+Where K=No.of treatment
+-Under the null hypothesis, the Friedman’s test follows the χ2 distribution with K-1 degree of freedoms when the sample size is large (N > 15 or K > 5)
+```{r}
+df=read_csv("https://reneshbedre.github.io/assets/posts/anova/plant_disease_friedman.csv")
+
+#convert to long format
+df_long <- df %>% gather(key = "locations", value = "disease", L1, L2, L3, L4)
+
+#summary statistics
+df_long %>% group_by(locations) %>%  summarise(n = n(), mean = mean(disease),sd = sd(disease)) 
+
+#visualize
+ggplot(df_long, aes(x = locations, y = disease)) + geom_boxplot(outlier.shape = NA)+geom_jitter(width = 0.2)  + theme(legend.position="top")
+
+```
+#Performing tests
+-Specify the formula of the form a ~ b | c, where a (dependent variable), b (treatment) and c (blocks)
+```{r}
+library(stats)
+
+friedman.test(formula = disease ~ locations | plant_var, data = df_long)
+
+# same as friedman.test(y = df_long$disease, groups = df_long$locations, blocks = df_long$plant_var)
+
+#Friedman test results indicate that there are significant differences btwn the plant disease varieties based on their location.
+
+```
+
+*Although the friedman's test indicates that there are significant differences in disease severity in plant varieties based on locations but does not tell which locations have a significant effect on disease severity.To know which locations are significantly different, we perform the conover's test 
+```{r}
+#library(PMCMRplus)
+frdAllPairsConoverTest(y = df_long$disease, groups = df_long$locations, 
+                        blocks = df_long$plant_var, p.adjust.method = "bonf")
+
+#The multiple pairwise comparisons from Conover’s test suggest that there are no statistically significant differences between different locations on disease severity for different plant varieties, despite there being low disease severity for location L2.
+```
+
+
+
+
+

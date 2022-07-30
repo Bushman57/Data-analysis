@@ -1,0 +1,92 @@
+---
+title: "Part 4"
+author: "Savins"
+date: "6/13/2022"
+output: html_document
+---
+
+## Get and Set working directory
+```{r}
+getwd()
+```
+
+## To check the files in your working directory
+```{r}
+list.files()
+```
+
+## Library packages
+```{r}
+library(tidyr)
+library(dplyr)
+```
+## tidyr-is used while changing the shapes of a data(wide_format)to (long_format)
+
+```{r}
+new_data_wide<-tibble(Name=c('John','Peter','James','Savins'),
+                     q_one=c(10,20,30,27),
+                     q_two=c(12,13,14,12),
+                     q_three=c(14,13,16,17))
+new_data_wide
+?as_tibble()
+#wide format
+```
+
+
+## functions used with the tidyr package
+```{r}
+#1.gather()
+long_format<-new_data_wide %>% gather(Question,response.time,q_one:q_three)
+long_format
+```
+
+
+
+```{r}
+long_separate<-long_format %>% separate(Question,c('Quiz','number'))
+long_separate
+```
+
+```{r}
+long_unite<-long_separate %>% unite(Question,Quiz,number,sep = '_')
+long_unite
+```
+
+```{r}
+wide_format<-long_unite %>% spread(Question,response.time)
+wide_format
+```
+
+
+
+
+
+```{r}
+iris %>%
+cross_join(iris) %>%
+filter(Species.x == Species.y,Sepal.Length.x < Sepal.Length.y,
+Sepal.Width.x < Sepal.Width.y,
+Petal.Length.x < Petal.Length.y,
+Petal.Width.x < Petal.Width.y)
+```
+
+
+```{r}
+col.m<-data.frame(x=c("A","B","C","D"),
+                  y=c(1,2,NA,NA))
+col.m %>% mutate(y=case_when(y==NA~4,else~y))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

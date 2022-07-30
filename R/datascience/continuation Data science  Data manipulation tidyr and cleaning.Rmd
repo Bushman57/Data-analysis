@@ -1,0 +1,568 @@
+---
+title: "continuation on data science"
+author: "Savins"
+date: "5/18/2022"
+output:
+  word_document: default
+  html_document: default
+---
+## lecture 2
+The sav is a spss file
+```{r}
+library(ggplot2)
+diamond<-diamonds[1:20,]
+```
+
+```{r}
+#install.packages("haven")
+#import spss data-sav
+library(haven)
+write_sav(diamond,"diamond6.sav")
+write_dta(diamond,"diamond7.dta")
+
+```
+
+Importing data to R
+```{r warning=FALSE}
+```
+
+
+```{r warning=FALSE}
+data<-read.csv("diamond2.csv",header = TRUE,na.strings = '.')
+```
+
+
+```{r warning=FALSE}
+data1<-read.csv("diamond2.csv",header = TRUE,na.strings = '.')
+data2<-read.csv("diamond2.csv",header = TRUE,na.strings = '.')
+data3<-read.csv("diamond2.csv",header = TRUE,na.strings = '.')
+
+data
+read.csv('diamond2.csv')
+#The difference with the underscore and the dot is that we used a package called readr
+#The readr package converts the data to a tibble rather than a data frame which is more sufficient and faster
+
+read_csv('diamond2.csv')
+
+read_sav("diamond6.sav")
+```
+
+
+```{r}
+library(tidyverse)
+```
+
+## Identifying and Removing NA in you data
+```{r}
+#1
+colSums(is.na(data))
+#2
+library(dplyr)
+data_p<-data %>% drop_na()
+```
+
+## Replacing NA in your data with mean,median and random numbers
+```{r}
+#1
+data[is.na(data)]<-mean(data$y)
+data
+#2
+data1[is.na(data1)]<-median(data$y)
+#3
+data2[is.na(data2)]<-59
+data3
+```
+
+
+```{r}
+ma<-c(2,21,2,3,5,6,3,3,5,6,6,NA,2,3,4,5,6,6)
+mean(ma,na.rm = TRUE)
+```
+
+## Replacing NA in categorical data
+
+Mode imputation (or mode substitution) replaces missing values of a categorical variable by the mode of non-missing cases of that variable.
+
+## Filtering Columns
+tidyverse package contains both 
+dplyr and tidyr
+```{r}
+library(tidyverse)
+?iris
+  iris %>%select(Sepal.Length,Species)
+```
+
+## dplyr package
+dplyr package-makes data manipulation easy
+Select()-is used to subset some columns
+mutate()-is used to create new variables from existing variables
+transmute()-
+filter()-it subsets rows on condition
+distinct()-gives unique cases in your variable/data
+arrange()-orders the row
+Rename()-changes the name of the variable
+slice()-gives you a specific no. of rows
+grepl()
+```{r}
+#select
+mn<-c(rep(NA,times=50))
+sum(mn)
+is.na(iris2)
+
+iris_b[(1:54)]<-c(rep(NA,times=54))
+iris
+iris<-cbind(iris2,iris_b)
+iris2<-select(iris2,-iris_b)
+iris<-iris %>% select(-Petal.Width)
+iris<-iris %>% rename(.,Petal.Width=iris_b)
+select(iris,Species,Sepal.Length,Sepal.Width)
+names(iris)
+iris %>% select(Species,Sepal.Length,Sepal.Width)
+#ctrl+shift+m
+iris %>% select(-(Species))
+iris %>% select(-(Sepal.Length:Petal.Length))
+iris %>% select(starts_with("p"))
+iris %>% select_if(is.numeric)
+#filter
+iris %>% filter(Sepal.Length==5)
+iris %>% filter(Species=='virginica',Sepal.Width==3)
+iris %>% filter(Species=='virginica'|Sepal.Width==3)
+iris %>% filter(Species=='virginica'&Sepal.Width==3)
+iris %>% filter_all(any_vars(.>6.0))
+
+#grepl
+grepl()
+grepl()
+```
+
+## Challenge 1
+
+```{r}
+library(ggplot2movies)
+library(tidyverse)
+
+movies
+names(movies)
+#1
+movies %>% select(title:votes,Action:Short)
+#2
+movies %>% select(-(starts_with("r")),-(starts_with("m")))
+#3
+movies %>%
+select_if(~sum(is.na(.))/length(.)>.25)
+```
+
+
+## revision on #1
+```{r include=FALSE}
+#1.To loop over each column
+#2.Percentile
+#3.compare the percentile to the data columns-condition
+```
+```{r}
+```
+
+
+```{r}
+new_data<-mydata %>% mutate(biomas=height/weight)
+new_data
+new_data$biomas[c(2,4,6)]<-c(NA,NA,NA)
+new_data$weight[c(1,3)]<-c(NA,NA)
+new_data
+perc<-function(x){
+  for (i in 1:length(x)) {
+   m<-as.list(((sum(length(which(is.na(x))))/length(x))*100)>30)
+  }
+return(m)
+}
+iris
+k<-perc(iris)
+k
+perc(movies)
+movies %>% select_if(~any(is.na(.)&perc(.)==TRUE))
+iris %>% select_if(~any(is.na(.))&perc(.)==TRUE)
+
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+
+new_data %>% select_if(~any(is.na(.))&n_distinct(.))
+new
+manigga<-as_mapper(~any(is.na(.))&n_distinct(.))
+manigga(colSums(is.na(new_data)))
+new_data %>% select_if(~any(is.na(.))) %>% sapply(., function(x) sum(is.na (x)))
+```
+## Revision
+```{r}
+new_data
+movies %>%
+    summarise(across(everything(), ~ sum(is.na(.))>5000)) %>% select_if(.,~isTRUE(.))
+
+?napredict()
+ sapply(z, function(x) sum(is.na (x)))
+ new_data %>% select_if(~any(is.na(.))) %>% sapply(., function(x) sum(is.na (x)))
+ iris %>%
+filter_all(any_vars(abs(. - mean(.))>2*sd(.)))
+```
+
+
+## Challenge2
+
+```{r}
+#1
+movies %>% filter(Action==1)
+#2
+movies %>% filter(length>=360)
+names(movies)
+#3
+movies %>% filter_if(~is.integer(.)&n_distinct(.)<3, all_vars(.<1))
+movies %>% filter_at(vars(Action:Short), all_vars(.==0))
+
+```
+## Renaming data columns
+```{r}
+#Changing the names
+iris %>%
+select_all(str_to_lower)
+iris %>%
+rename(sw=Sepal.Width,sl=Sepal.Length)
+#
+iris %>%
+rename_at(vars(starts_with("S")), str_to_lower)
+
+iris %>%
+rename_if(is.numeric, str_to_lower)
+```
+
+## a) Mutate()
+```{r}
+iris %>% mutate(biomas=Sepal.Length/Sepal.Width)
+iris %>% transmute(biomas=Sepal.Length/Sepal.Width)
+iris %>% slice(1:5)
+iris %>% slice(-(1:floor(n()/3)))
+iris
+?floor
+
+?n
+```
+## b)
+```{r}
+mtcars
+names(mtcars)
+mtcars<-mtcars %>%
+rownames_to_column("car")
+```
+```{r}
+diamond2
+names(diamond2)
+diamond2 %>% rename(index=X)
+rownames_to_column("Index")
+mydataset
+```
+
+
+## revision
+```{r}
+#new_data %>%  table(is.na(.))
+new_data
+table(is.na(new_data))
+ new_data1<-new_data %>% rownames_to_column("index")
+n
+#1
+function(x){
+for (i in 1:col(x)) {
+ as.list((colSums(is.na(x))/nrow(x)*100)>52)
+
+}
+}
+new_data %>% select_if(~any(is.na(.))) %>% sapply(.,function(x)sum(length(which(is.na(x))))/length(x))
+
+
+
+new_data %>% select_if(~any(is.na(.))) %>% sapply(., function(x) sum(is.na (x)))
+
+new_data %>% select_if(~any(colSums(is.na(.))/nrow(.)*100)>52)
+new_data %>% select_if(~colSums(is.na(.==TRUE)))
+is.numeric(new)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(ggplot2movies)
+library(tidyverse)
+movies %>% rename(.,budget_if_known=budget)
+movies %>% select_if(~sum(is.na(.))/length(.)>.25,str_to_upper)
+```
+## inclusion operator
+```{r}
+
+#inclusion operator->%in%
+movies %>% filter(title%in%c("$21 a Day Once a Month","$40,000","'Hukkunud Alpinisti' hotell"))
+movies
+```
+
+## Filtering rows
+```{r}
+movies %>% filter(title=="1 Giant Leap"&year==2002)
+movies %>% filter(year>2004)
+movies %>% filter(rating >6.5,title%in%c("$21 a Day Once a Month","$40,000","'Hukkunud Alpinisti' hotell"))
+
+?contains
+```
+
+
+```{r}
+iris %>%
+filter_all(any_vars(.>7.5))
+iris %>%select(-Species) %>% 
+filter_all(any_vars(abs(. - mean(.))>2*sd(.)))
+iris %>% filter_if(is.numeric,all_vars(.<mean(.)))
+
+```
+
+
+Re-arranging your data
+# sorting rows
+By default, arrange() sorts columns in ascending order i.e. from smallest to largest.
+To change the sort order to descending for a column you put the function desc() around the column name.
+
+```{r}
+iris %>%
+arrange_if(~is.factor(.), desc)
+str(iris)
+iris
+```
+## Re-ordering columns
+You can use the select() function to re-order columns.
+```{r}
+iris %>%
+select(starts_with("P"), everything())
+
+#To sort alphabetically, we need to extract column names which we can do using the function current_vars() and then sort the names
+
+iris %>%
+select(sort(current_vars()))
+```
+
+
+## challenge 3
+```{r}
+movies %>% arrange(desc(title))
+movies %>% select_if(~n_distinct(.)==2)  
+movies
+fix(iris)
+iris
+```
+
+## changing data
+## mutate
+-This section will focus on how you can update, drop, and create new columns
+-To make changes, we mutate() our dataset.
+-The functions we use in the expressions need to work on vectors
+and operate just like how they would behave if we were working on
+the vector independently of the data.frame.1 If we put a name on
+the LHS of an expression and an = between them, we give the new column a name
+-toupper() converts the string to upper case or lower case and vice versa
+
+```{r}
+iris %>%
+mutate(Sepal.Area = Sepal.Width * Sepal.Length)
+#When using mutate() you can create multiple new columns
+
+iris %>%
+mutate(Sepal.Area = Sepal.Width * Sepal.Length,
+Avg.Sepal.Area = mean(Sepal.Area))
+
+#Updating a column involves using its name on the LHS of an assign.
+
+iris %>%
+mutate(Sepal.Width=Sepal.Width*.9)
+
+#To delete a column:
+# 1)you can either assign NULL
+iris %>% mutate(Sepal.Length=NULL)
+
+#2) use the exclude syntax for a select()
+iris %>% select(-Sepal.Length)
+
+#In general you can perform multiple task at once enabling readability
+iris %>%
+mutate(Sepal.Area = Sepal.Width * Sepal.Length,
+Avg.Sepal.Area = mean(Sepal.Area),
+Sepal.Width=Sepal.Width*.9,
+Sepal.Length=NULL)
+```
+
+```{r}
+#We can use row_number() to add an ID column to our data.
+iris %>% mutate(id=row_number())
+
+#lag() $ lead()
+iris %>%
+mutate(prev = lag(Sepal.Length),
+future = lead(Sepal.Length))
+
+?lag
+x<-1:5
+tibble(behind=lag(x),x,ahead=lead(x))
+
+#case_when()
+#-allows us to write a multi-condition statement without nesting lots of ifelse() statements.
+iris %>% mutate(size=case_when(
+  Sepal.Length<mean(Sepal.Length)~"s",
+    Sepal.Length>mean(Sepal.Length)~"l",
+TRUE~"m"
+))
+
+iris %>%
+mutate(Species = case_when(
+Species == "setosa" ~ toupper(Species),
+TRUE ~ as.character(Species)
+))
+```
+
+There are extra cumulative functions that consider all the rows
+before the present one. We already have cumsum(), cummin(),
+cummax() and a few others from base R. tidyverse gives us:
+• cumall() for checking a condition has been TRUE in every
+prior row
+• cumany() for checking a condition has been TRUE in any
+prior row
+• cummean() for getting the mean of all prior values
+The cumall() and cumany() are especially useful for saying
+whether things happened in the past, along with lag(), as you
+often want to be able to create such measures as candidate
+columns when building predictive models.
+
+```{r}
+?cumsum
+cumsum(1:10)
+
+iris %>%
+mutate(runagg=cumall(Sepal.Length<mean(Sepal.Length))
+       )
+```
+
+## transmute
+ 
+mutate() takes your data, applies the changes, and returns the updated dataset in its entirety. Occasionally, you might want to return only the columns you want to change. In such a situation,swap the word mutate for transmute.
+
+```{r}
+
+
+iris %>%
+transmute(Sepal.Width=floor(Sepal.Width),
+Species = case_when(
+Species == "setosa" ~ toupper(Species),
+TRUE ~ as.character(Species)
+))
+```
+
+## Advanced data change
+
+-Using mutate_all() you can apply a function to every column.
+-If you want to change columns where they meet some sort of criteria within the data, you can provide a criteria to mutate_if().
+-To change columns with certain name conditions use the
+mutate_at() variant.
+```{r}
+iris %>%
+mutate_all(as.character)
+
+iris %>%
+mutate_if(is.numeric, ~ . + rnorm(.))
+
+iris %>%
+mutate_at(vars(Sepal.Width:Petal.Width), ~ . + rnorm(.))
+
+```
+
+
+## Challenge 4
+```{r}
+#1
+irisImperial<-iris %>% mutate(Species=toupper(Species),
+  Sepal.Length=Sepal.Length/2.5,
+  Sepal.Width=Sepal.Width/2.5,
+  Petal.Width=Petal.Width/2.5,
+  Petal.Length=Sepal.Length/2.5)
+
+
+irisImperial
+
+#2
+library(ggplot2movies)
+median(movies$length)
+movies %>% mutate(length_median=length-median(length))
+#3
+irisImperial1<-iris %>% mutate_if(is.numeric,~./2.5) %>% mutate(Species=toupper(Species))
+irisImperial1
+```
+
+
+
+
+
+```{r}
+#revision
+iris_imperial<-iris %>% mutate(Species=toupper(Species),
+  Sepal.Length=Sepal.Length/2.5,
+  Sepal.Width=Sepal.Width/2.5,
+  Petal.Width=Petal.Width/2.5,
+  Petal.Length=Sepal.Length/2.5)
+
+
+iris_imperial
+```
+
+
+
+```{r}
+fix(iris)
+iris
+iris$Sepal.Length[is.na(iris$Sepal.Length)]
+sum(is.na(iris))
+which(is.na(iris))
+?which
+?lag
+mean(iris$Sepal.Length,na.rm = TRUE)
+```
+
+library
+```{r}
+library(tidyverse)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

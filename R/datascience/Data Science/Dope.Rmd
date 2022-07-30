@@ -1,0 +1,62 @@
+---
+title: "Fun things"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+#library packages
+```{r,include=FALSE}
+library(ggpubr)
+library(rstatix)
+library(tidyverse)
+```
+
+
+
+#1.view p values in your boxplot 
+```{r}
+Prac<-ToothGrowth
+
+#statistical test
+stat.test <- Prac %>%
+  t_test(len ~ supp) %>%  
+  #t.test(len ~ supp,data = Prac)  ##Note the difference in (.,_) 
+add_significance()
+stat.test
+stat_test<-t.test(len ~ supp,data = Prac)
+
+
+# Box plots with p-values
+#Steps
+#1.Create a box plot    ##bxp:)->.com
+bp<-ggplot(Prac,aes(supp,len),facet=dose)+geom_boxplot()+theme_test()
+
+bxp <- ggboxplot(Prac, x = "supp", y = "len", fill = "#00AFBB",
+                 facet.by  = "dose")
+stat.test <- stat.test %>% add_xy_position(x = "supp")        ##add the xy_position
+bxp +
+  stat_pvalue_manual(stat.test, label = "p")+       ##add the pvalue to your boxplot
+  scale_y_continuous(expand = expansion(mult = c(0, 0.5)))
+```
+
+#2.Interaction plot in Two way Anova
+```{r}
+#-It is used to visualize 2 categorical data and a numeric variable
+#toothgrowth dataset
+interaction.plot(x.factor = new_growth$dose, trace.factor = new_growth$supp, 
+                 response = new_growth$len, fun = mean, 
+                 type = "b", legend = TRUE, 
+                 xlab = "Dose", ylab="Tooth Length",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))
+
+#x.factor: the factor to be plotted on x axis.
+#trace.factor: the factor to be plotted as lines
+#response: a numeric variable giving the response
+#type: the type of plot. Allowed values include p (for point only), l (for line only) and b (for both point and line)
+```
+
+
+
+
+
